@@ -14,4 +14,10 @@ int main(int argc, char* argv[]) {
     const int data_len = dim_x * dim_y;
 
     printf("X: %d, Y: %d, chann: %d\n", dim_x, dim_y, channels);
+    for (int y = 0; y < dim_y; y++) {
+        for (int x = 0; x < dim_x; x++) {
+            printf("%3u ", data[y*dim_x + x]);
+        }
+        printf("\n");
+    }
 }
