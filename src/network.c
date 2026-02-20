@@ -4,23 +4,25 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
-Network networkAlloc(Matrix* activations, size_t* arch, size_t arch_len) {
+Network networkAlloc(Matrix a0, size_t* arch, size_t arch_len) {
     assert(arch_len > 1);
-    assert(activations != NULL);
 
     Network n;
     n.layers = arch_len;
     n.arch = arch;
-    n.activations = activations;
 
     n.weights = calloc(arch_len, sizeof(Matrix));
     n.biases = calloc(arch_len, sizeof(Matrix));
+    n.activations = calloc(arch_len, sizeof(Matrix));
+    n.activations[0] = a0;
 
     for (size_t i = 1; i < arch_len; i++) {
         n.weights[i-1] = matrixAlloc(n.arch[i-1], n.arch[i]);
-        n.biases[i-1] = matrixAlloc(n.arch[i-1], n.arch[i]);
+        n.biases[i-1] = matrixAlloc(1, n.arch[i]);
+        n.activations[i] = matrixAlloc(1, n.arch[i]);
     }
 
     return n;
@@ -65,10 +67,24 @@ void networkFeedForward(Network nn) {
             }
 
             float activation = sigmoidf(weight_sum + bias_sum);
-            MATRIX_AT(nn.weights[layer], layer, neuron) = activation;
+            MATRIX_AT(nn.activations[layer], layer, neuron) = activation;
         }
     }
 }
 
+// expected = array of expected values
+float networkCost(Network nn, float* expected) {
+    float cost = 0.f;
+    for (size_t i = 0; i < nn.arch[nn.layers - 1]; i++) {
+        cost += powf(
+            MATRIX_AT(nn.activations[nn.layers - 1], 0, i) - expected[i],
+            2.f
+        );
+    }
+
+    return cost;
+}
+
 void networkBackPropagate(Network nn) {
 }
+

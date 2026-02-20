@@ -12,10 +12,11 @@ typedef struct {
     size_t* arch;
 } Network;
 
-Network networkAlloc(Matrix* activations, size_t* arch, size_t arch_len);
+Network networkAlloc(Matrix activations, size_t* arch, size_t arch_len);
 void networkRandomize(Network nn, size_t idx);
 void networkPrint(Network* nn);
 void networkFeedForward(Network nn);
+float networkCost(Network nn, float* expected);
 void networkBackPropagate(Network nn);
 
 #endif // NETWORK_H

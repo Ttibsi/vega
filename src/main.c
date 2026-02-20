@@ -22,6 +22,7 @@ int main(int argc, char* argv[]) {
 
     // Draw image to terminal
     printf("X: %d, Y: %d, chann: %d\n", dim_x, dim_y, channels);
+#if 0
     for (int y = 0; y < dim_y; y++) {
         for (int x = 0; x < dim_x; x++) {
             if (data[y*dim_x + x]) {
@@ -32,22 +33,29 @@ int main(int argc, char* argv[]) {
         }
         printf("\n");
     }
+#endif
 
     // Turn image data into a 1-col matrix
     Matrix a0 = matrixAlloc(dim_x*dim_y, 1);
 
     // Create a neural network with random weights and biases to start
     size_t arch[] = {dim_x*dim_y, 16, 16, 10};
-    Network nn = networkAlloc(&a0, arch, sizeof(arch)/sizeof(arch[0]));
+    Network nn = networkAlloc(a0, arch, sizeof(arch)/sizeof(arch[0]));
     networkRandomize(nn, 0);
 
     networkPrint(&nn);
 
     // learn
-    const int epoch = 100;
+    const int epoch = 10;
+    const float expected[] = {
+        0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f
+    };
 
     for (int i = 0; i < epoch; i++) {
         networkFeedForward(nn);
         networkBackPropagate(nn);
+
+        const float cost = networkCost(nn, expected);
+        printf("%d: c=%f\n", i, cost);
     }
 }

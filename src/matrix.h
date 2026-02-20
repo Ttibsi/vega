@@ -9,7 +9,7 @@ typedef struct {
     size_t cols;
 } Matrix;
 
-#define MATRIX_AT(mat, i, j) (mat).data[(i)*(mat).cols + (j)]
+#define MATRIX_AT(mat, row, col) (mat).data[(row)*(mat).cols + (col)]
 
 Matrix matrixAlloc(size_t rows, size_t cols);
 float matrixAt(Matrix m, size_t row, size_t col);
