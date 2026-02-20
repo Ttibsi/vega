@@ -1,6 +1,7 @@
 #include "network.h"
 
 #include <assert.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -44,4 +45,30 @@ void networkPrint(Network* nn) {
     }
 
     printf("]}\n");
+}
+
+float sigmoidf(float x) {
+    return 1.f / (1.f + expf(x));
+}
+
+void networkFeedForward(Network nn) {
+    // Start at second layer and look backward.
+    // Don't run for final layer as there is no weights to calculate
+    for (size_t layer = 1; layer < nn.layers - 1; layer++) {
+        for (size_t neuron = 0; neuron < nn.arch[layer]; neuron++) {
+            float weight_sum = 0.f;
+            float bias_sum = 0.f;
+
+            for (size_t i = 0; i < nn.arch[layer-1]; i++) {
+                weight_sum += nn.weights[layer-1].data[i];
+                bias_sum += nn.biases[layer-1].data[i];
+            }
+
+            float activation = sigmoidf(weight_sum + bias_sum);
+            MATRIX_AT(nn.weights[layer], layer, neuron) = activation;
+        }
+    }
+}
+
+void networkBackPropagate(Network nn) {
 }

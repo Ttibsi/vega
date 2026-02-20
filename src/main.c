@@ -44,5 +44,10 @@ int main(int argc, char* argv[]) {
     networkPrint(&nn);
 
     // learn
-    // networkFeedForward(nn);
+    const int epoch = 100;
+
+    for (int i = 0; i < epoch; i++) {
+        networkFeedForward(nn);
+        networkBackPropagate(nn);
+    }
 }
