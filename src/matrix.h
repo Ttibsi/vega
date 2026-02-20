@@ -1,7 +1,7 @@
 #ifndef MATRIX_H
 #define MATRIX_H
 
-#include <assert.h>
+#include <stddef.h>
 
 typedef struct {
     float* data;
@@ -9,15 +9,9 @@ typedef struct {
     size_t cols;
 } Matrix;
 
-inline Matrix matrixAlloc(size_t rows, size_t cols) {
-}
+#define MATRIX_AT(mat, i, j) (mat).data[(i)*(mat).cols + (j)]
 
-inline float matrixAt(Matrix m, size_t row, size_t col) {
-    assert(m.rows >= row);
-    assert(m.cols >= col);
-}
+Matrix matrixAlloc(size_t rows, size_t cols);
+float matrixAt(Matrix m, size_t row, size_t col);
 
-inline void matrixRandomize(Matrix m) {
-}
-
-#endif MATRIX_H
+#endif // MATRIX_H
