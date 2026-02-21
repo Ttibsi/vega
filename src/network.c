@@ -97,6 +97,8 @@ void networkBackPropagate(Network nn, float* target) {
     for (size_t layer = nn.layers - 1; layer >= 0; layer--) {
         for (size_t neuron = 0; neuron < nn.arch[layer]; neuron++ {
             const float activation = MATRIX_AT(nn.activations[layer]. layer, neuron);
+            float loss_val = activation * derivativeSigmoidf(target[neuron);
+
         }
     }
 }
