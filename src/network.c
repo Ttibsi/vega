@@ -53,6 +53,10 @@ float sigmoidf(float x) {
     return 1.f / (1.f + expf(x));
 }
 
+float derivativeSigmoidf(float x) {
+    return x * (1 - x);
+}
+
 void networkFeedForward(Network nn) {
     // Start at second layer and look backward.
     // Don't run for final layer as there is no weights to calculate
@@ -89,7 +93,12 @@ float networkCost(Network nn, float* expected) {
     return cost;
 }
 
-void networkBackPropagate(Network nn) {
+void networkBackPropagate(Network nn, float* target) {
+    for (size_t layer = nn.layers - 1; layer >= 0; layer--) {
+        for (size_t neuron = 0; neuron < nn.arch[layer]; neuron++ {
+            const float activation = MATRIX_AT(nn.activations[layer]. layer, neuron);
+        }
+    }
 }
 
 void networkPrintOutLayer(Network nn) {
