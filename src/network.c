@@ -46,7 +46,7 @@ void networkPrint(Network* nn) {
         printf(" %zu", nn->arch[i]);
     }
 
-    printf("]}\n");
+    printf(" ]}\n");
 }
 
 float sigmoidf(float x) {
@@ -58,15 +58,19 @@ void networkFeedForward(Network nn) {
     // Don't run for final layer as there is no weights to calculate
     for (size_t layer = 1; layer < nn.layers - 1; layer++) {
         for (size_t neuron = 0; neuron < nn.arch[layer]; neuron++) {
+            // multiply each weight by the activation on the LHS neuron
+            // sum those up
+            // add neuron's bias
+            // sigmoidf()
+            // total is the activation of the neuron on RHS
+
             float weight_sum = 0.f;
-            float bias_sum = 0.f;
 
             for (size_t i = 0; i < nn.arch[layer-1]; i++) {
-                weight_sum += nn.weights[layer-1].data[i];
-                bias_sum += nn.biases[layer-1].data[i];
+                weight_sum += nn.weights[layer-1].data[i] * nn.activations[layer-1].data[i];
             }
-
-            float activation = sigmoidf(weight_sum + bias_sum);
+            float bias = nn.biases[layer-1].data[0];
+            float activation = sigmoidf(weight_sum + bias);
             MATRIX_AT(nn.activations[layer], layer, neuron) = activation;
         }
     }
@@ -88,3 +92,10 @@ float networkCost(Network nn, float* expected) {
 void networkBackPropagate(Network nn) {
 }
 
+void networkPrintOutLayer(Network nn) {
+    printf("Out: [");
+    for (size_t i = 0; i < nn.arch[nn.layers - 1]; i++) {
+        printf(" %f", MATRIX_AT(nn.activations[nn.layers - 1], i, 0));
+    }
+    printf(" ]\n");
+}

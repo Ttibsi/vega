@@ -18,5 +18,6 @@ void networkPrint(Network* nn);
 void networkFeedForward(Network nn);
 float networkCost(Network nn, float* expected);
 void networkBackPropagate(Network nn);
+void networkPrintOutLayer(Network nn);
 
 #endif // NETWORK_H

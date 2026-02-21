@@ -58,4 +58,6 @@ int main(int argc, char* argv[]) {
         const float cost = networkCost(nn, expected);
         printf("%d: c=%f\n", i, cost);
     }
+
+    networkPrintOutLayer(nn);
 }
