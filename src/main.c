@@ -56,7 +56,7 @@ int main(int argc, char* argv[]) {
         networkBackPropagate(nn, expected);
 
         const float cost = networkCost(nn, expected);
-        printf("%d: c=%f\n", i, cost);
+     printf("%d: c=%f\n", i, cost);
     }
 
     networkPrintOutLayer(nn);
