@@ -19,6 +19,7 @@ static void  arenaReset(Arena* a);
 static void  arenaDestroy(Arena* a);
 
 typedef enum {
+    OP_NONE,
     OP_PLUS,
     OP_MUL,
     OP_ACT
@@ -30,6 +31,8 @@ typedef struct _Value {
     struct _Value* prev[2];
     Op op;
 } Value;
+
+static Value* NULLPREV[2] = { NULL, NULL };
 
 static Value newValue(float x, Value* prev[static 2], Op op);
 static Value plusValue(Value* lhs, Value* rhs);
