@@ -69,12 +69,51 @@ static void trainPerceptron(MLP* mlp, size_t iterations, size_t learnRate);
 
 #ifdef MLP_IMPLEMENTATION
 
+#include <math.h>
+#include <stdlib.h>
+
 static float sigmoidf(float x) {
     return 1.f / (1.f + expf(x));
 }
 
 static float sigmoidfDerivative(float x) {
     return x * (1 - x);
+}
+
+static int arenaInit(Arena* a, size_t capacity) {
+    if (!a || capacity == 0) { return 0; }
+
+    a->memory = (unsigned char*)malloc(capacity);
+    if (!a->memory) { return 0; }
+
+    a->capacity = capacity;
+    a->size = 0;
+
+    return 1;
+}
+
+static void* arenaAlloc(Arena* a, size_t allocSize) {
+    if (!a || allocSize == 0) { return NULL; }
+    if (a->size + allocSize > a->capacity) { return NULL; }
+
+    void* ptr = a->memory + a->size;
+    a->size += allocSize;
+
+    return ptr;
+}
+
+static void arenaReset(Arena* a) {
+    if (!a) { return; }
+    a->size = 0;
+}
+
+static void arenaDestroy(Arena* a) {
+    if (!a) { return; }
+
+    free(a->memory);
+    a->memory = NULL;
+    a->capacity = 0;
+    a->size = 0;
 }
 
 #endif // MLP_IMPLEMENTATION
