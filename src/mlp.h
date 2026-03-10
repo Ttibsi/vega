@@ -69,5 +69,13 @@ static void trainPerceptron(MLP* mlp, size_t iterations, size_t learnRate);
 
 #ifdef MLP_IMPLEMENTATION
 
+static float sigmoidf(float x) {
+    return 1.f / (1.f + expf(x));
+}
+
+static float sigmoidfDerivative(float x) {
+    return x * (1 - x);
+}
+
 #endif // MLP_IMPLEMENTATION
 #endif // MLP_H
