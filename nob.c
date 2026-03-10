@@ -7,19 +7,18 @@ int main(int argc, char* argv[]) {
     GO_REBUILD_URSELF(argc, argv);
 
     Cmd cmd = {0};
+
 #if 0
     cmd_append(&cmd, "cc", "-Wall", "-Wextra", "-std=c23", "-g");
     cmd_append(&cmd, "-Iinclude", "-Linclude", "-lm");
     cmd_append(&cmd, "-o", exec_name);
     cmd_append(&cmd, "src/main.c");
-
     if (!cmd_run(&cmd)) { return 1; }
 #endif
 
-    cmd_append(&cmd, "cc", "-Wall", "-Wextra", "-std=c23", "-g");
-    cmd_append(&cmd, "-o", "test");
+    cmd_append(&cmd, "gcc", "-Wall", "-Wextra", "-std=c23", "-g");
     cmd_append(&cmd, "src/main2.c");
-
+    cmd_append(&cmd, "-o", exec_name);
     if (!cmd_run(&cmd)) { return 1; }
 
     return 0;
