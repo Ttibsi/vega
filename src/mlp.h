@@ -18,21 +18,24 @@ static void* arenaAlloc(Arena* a, size_t allocSize);
 static void  arenaReset(Arena* a);
 static void  arenaDestroy(Arena* a);
 
+typedef enum {
+    OP_PLUS,
+    OP_MUL,
+    OP_ACT
+} Op;
+
 typedef struct _Value {
     float x;
     float grad;
     struct _Value* prev[2];
-    char op;
+    Op op;
 } Value;
 
-static Value newValue(float, Value*[static 2], char);
-static Value plusValue(Value*, Value*);
-static Value mulValue(Value*, Value*);
-// switch on op, backprop as expected
-// could use funcptrs here like in micrograd?
-// This should be recursive? 
-static void backprop(Value*); 
-static Value activateValue(Value*, float(*)(float));
+static Value newValue(float x, Value* prev[static 2], Op op);
+static Value plusValue(Value* lhs, Value* rhs);
+static Value mulValue(Value* lhs, Value* rhs);
+static Value activateValue(Value* val, float(*activation)(float));
+static void backprop(Value* this); 
 
 typedef struct {
     Value* weights;
@@ -114,6 +117,56 @@ static void arenaDestroy(Arena* a) {
     a->memory = NULL;
     a->capacity = 0;
     a->size = 0;
+}
+
+static Value newValue(float x, Value* prev[static 2], Op op) {
+    return (Value){
+        .x = x,
+        .grad = 0.0f,
+        .prev[0] = prev[0],
+        .prev[1] = prev[1],
+        .op = op
+    };
+}
+
+static Value plusValue(Value* lhs, Value* rhs) {
+    Value* prev[2] = {lhs, rhs};
+    return newValue(lhs->x + rhs->x, prev, OP_PLUS);
+}
+
+static Value mulValue(Value* lhs, Value* rhs) {
+    Value* prev[2] = {lhs, rhs};
+    return newValue(lhs->x * rhs->x, prev, OP_MUL);
+}
+
+static Value activateValue(Value* val, float(*activation)(float)) {
+    Value* prev[2] = {val};
+    return newValue(activation(val->x), prev, OP_ACT);
+}
+
+static void backprop(Value* this) {
+    // base case - the final element should have a gradient of 1.0
+    if (!this->grad) { this->grad = 1.0; }
+
+    if (this->op == OP_PLUS) {
+        this->prev[0]->grad += this->grad;
+        this->prev[1]->grad += this->grad;
+
+        backprop(this->prev[0]);
+        backprop(this->prev[1]);
+
+    } else if (this->op == OP_MUL) {
+        this->prev[0]->grad += this->grad * this->prev[1]->grad;
+        this->prev[1]->grad += this->grad * this->prev[0]->grad;
+
+        backprop(this->prev[0]);
+        backprop(this->prev[1]);
+
+    } else if (this->op == OP_ACT) {
+        // TODO: Adjust for other activation functions
+        this->prev[0]->grad += sigmoidfDerivative(this->grad);
+        backprop(this->prev[0]);
+    }
 }
 
 #endif // MLP_IMPLEMENTATION
