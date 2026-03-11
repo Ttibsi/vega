@@ -5,6 +5,7 @@
 
 static float sigmoidf(float);
 static float sigmoidfDerivative(float);
+static float randWeight(void);
 
 typedef struct {
     // pointer arithmetic on void* isn't standard C
@@ -48,8 +49,8 @@ typedef struct {
 
 // note: inCount is the number of connections into this neuron
 // wCount == inCount
-static Neuron newNeuron(size_t wCount);
-static Value activateNeuron(Neuron*, float* inputs[], int inCount);
+static Neuron newNeuron(size_t wCount, Arena* a);
+static Value activateNeuron(Neuron*, float inputs[], size_t inCount);
 
 // functionally an array of neurons, but doesn't need to be a dynamic array
 typedef struct {
@@ -75,6 +76,7 @@ static void trainPerceptron(MLP* mlp, size_t iterations, size_t learnRate);
 
 #ifdef MLP_IMPLEMENTATION
 
+#include <assert.h>
 #include <math.h>
 #include <stdlib.h>
 
@@ -84,6 +86,14 @@ static float sigmoidf(float x) {
 
 static float sigmoidfDerivative(float x) {
     return x * (1 - x);
+}
+
+// https://stackoverflow.com/a/13409005
+static float randWeight(void) {
+    const float min = -1.0f;
+    const float max = 1.0f;
+
+    return ((max - min) * ((float)rand() / RAND_MAX)) + min;
 }
 
 static int arenaInit(Arena* a, size_t capacity) {
@@ -170,6 +180,33 @@ static void backprop(Value* this) {
         this->prev[0]->grad += sigmoidfDerivative(this->grad);
         backprop(this->prev[0]);
     }
+}
+
+static Neuron newNeuron(size_t wCount, Arena* a) {
+    Neuron n = {0};
+    n.weights = arenaAlloc(a, sizeof(Value) * wCount);
+
+    while (n.weight_count < wCount) {
+        Value v = newValue(randWeight(), NULLPREV, OP_NONE);
+        n.weights[n.weight_count] = v;
+        n.weight_count++;
+    }
+
+    n.bias = newValue(0.0f, NULLPREV, OP_NONE);
+    return n;
+}
+
+static Value activateNeuron(Neuron* n, float inputs[], size_t inCount) {
+    assert(inCount >= n->weight_count);
+
+    float val = n->bias.x;
+    for (size_t i = 0; i < n->weight_count; i++) {
+        val += (n->weights[i].x * inputs[i]);
+    }
+
+    // TODO: Should this have no previous?
+    // TODO: we might also want to genericise this if we use different activation functions
+    return newValue(sigmoidf(val), NULLPREV, OP_ACT);
 }
 
 #endif // MLP_IMPLEMENTATION
