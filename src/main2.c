@@ -28,6 +28,10 @@ int main(int argc, char* argv[]) {
     // Layer test
     arenaReset(&a);
     Layer l = newLayer(NULL, 2, &a);
+    Value* vs = activateLayer(&l, inputs, 4, &a);
+    for (size_t i = 0; i < 4; i++) {
+        printf("Neuron value(%zu): %f\n", i, vs[i].x);
+    }
     //
 
     arenaDestroy(&a);

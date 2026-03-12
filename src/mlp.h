@@ -61,7 +61,7 @@ typedef struct {
 
 static Layer newLayer(Layer* prevLayer, size_t outputs, Arena* a);
 // returns an array of values of length inCount
-static Value* activateLayer(Layer* l, float* inputs[], int inCount);
+static Value* activateLayer(Layer* l, float inputs[], int inCount, Arena* a);
 
 typedef struct {
     Layer* layers;
@@ -233,7 +233,14 @@ static Layer newLayer(Layer* prevLayer, size_t outputs, Arena* a) {
     return l;
 }
 
-static Value* activateLayer(Layer* l, float* inputs[], int inCount) {
+static Value* activateLayer(Layer* l, float inputs[], int inCount, Arena* a) {
+    Value* vs = arenaAlloc(a, sizeof(Value) * inCount);
+    
+    for (size_t i = 0; i < l->count; i++) {
+        vs[i] = activateNeuron(&l->neurons[i], inputs, inCount);
+    }
+
+    return vs;
 }
 
 #endif // MLP_IMPLEMENTATION
