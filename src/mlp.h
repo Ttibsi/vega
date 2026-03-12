@@ -60,7 +60,6 @@ typedef struct {
 } Layer;
 
 static Layer newLayer(Layer* prevLayer, size_t outputs, Arena* a);
-// returns an array of values of length inCount
 static Value* activateLayer(Layer* l, float inputs[], int inCount, Arena* a);
 
 typedef struct {
@@ -68,11 +67,9 @@ typedef struct {
     size_t layerCount;
 } MLP;
 
-static MLP newPerceptron(size_t* arch, size_t arch_sz);
+static MLP newPerceptron(size_t* arch, size_t arch_sz, Arena* a);
 static Value* activatePerceptron(MLP* mlp, float* inputs, float inCount);
-// note: will need to set all grads to 0 on each iteration
 static void gradientDescent(MLP* mlp, size_t learnRate);
-// for iterations, step forward, calculate loss, backprop, update backwar
 static void trainPerceptron(MLP* mlp, size_t iterations, size_t learnRate);
 
 #ifdef MLP_IMPLEMENTATION
@@ -241,6 +238,32 @@ static Value* activateLayer(Layer* l, float inputs[], int inCount, Arena* a) {
     }
 
     return vs;
+}
+
+static MLP newPerceptron(size_t* arch, size_t arch_sz, Arena* a) {
+    MLP mlp = {0};
+    mlp.layers = arenaAlloc(a, sizeof(Layer) * arch_sz);
+    mlp.layerCount = arch_sz;
+
+    Layer* prev = NULL;
+    for (size_t i = 0; i < arch_sz; i++) {
+        Layer l = newLayer(prev, arch[i], a);
+        mlp.layers[i] = l;
+        prev = &mlp.layers[i];
+    }
+
+    return mlp;
+}
+
+static Value* activatePerceptron(MLP* mlp, float* inputs, float inCount) {
+}
+
+// note: will need to set all grads to 0 on each iteration
+static void gradientDescent(MLP* mlp, size_t learnRate) {
+}
+
+// for iterations, step forward, calculate loss, backprop, update backwar
+static void trainPerceptron(MLP* mlp, size_t iterations, size_t learnRate) {
 }
 
 #endif // MLP_IMPLEMENTATION

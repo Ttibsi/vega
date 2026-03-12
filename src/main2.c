@@ -32,7 +32,12 @@ int main(int argc, char* argv[]) {
     for (size_t i = 0; i < 4; i++) {
         printf("Neuron value(%zu): %f\n", i, vs[i].x);
     }
-    //
+
+    // MLP test
+    arenaReset(&a);
+    size_t arch[] = {2, 2, 1};
+    size_t arch_sz = sizeof(arch) / sizeof(arch[0]);
+    MLP mlp = newPerceptron(arch, arch_sz, &a);
 
     arenaDestroy(&a);
     return 0;
