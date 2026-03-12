@@ -15,14 +15,21 @@ int main(int argc, char* argv[]) {
     printf("%f + %f = %f\n", a.x, b.x, c.x);
     */
 
-    // Neuron test
     Arena a = {0};
-    arenaInit(&a, sizeof(Value) * 16);
-    Neuron n = newNeuron(4, &a);
+    arenaInit(&a, sizeof(Value) * 1024);
+
+    // Neuron test
+    arenaReset(&a);
+    Neuron n = newNeuron(4, NULLPREV, &a);
     float inputs[] = {1.0, 2.0, 3.0, 4.0};
     Value v = activateNeuron(&n, inputs, 4);
-    printf("Neurun value: %f\n", v.x);
-    arenaDestroy(&a);
+    printf("Neuron value: %f\n", v.x);
 
+    // Layer test
+    arenaReset(&a);
+    Layer l = newLayer(NULL, 2, &a);
+    //
+
+    arenaDestroy(&a);
     return 0;
 }

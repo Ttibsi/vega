@@ -49,16 +49,17 @@ typedef struct {
 
 // note: inCount is the number of connections into this neuron
 // wCount == inCount
-static Neuron newNeuron(size_t wCount, Arena* a);
+static Neuron newNeuron(size_t wCount, Value* inputs[], Arena* a);
 static Value activateNeuron(Neuron*, float inputs[], size_t inCount);
 
 // functionally an array of neurons, but doesn't need to be a dynamic array
 typedef struct {
     Neuron* neurons;
     size_t count;
+    size_t out_conns;
 } Layer;
 
-static Layer newLayer(size_t inCount, size_t outCount);
+static Layer newLayer(Layer* prevLayer, size_t outputs, Arena* a);
 // returns an array of values of length inCount
 static Value* activateLayer(Layer* l, float* inputs[], int inCount);
 
@@ -182,12 +183,12 @@ static void backprop(Value* this) {
     }
 }
 
-static Neuron newNeuron(size_t wCount, Arena* a) {
+static Neuron newNeuron(size_t wCount, Value* inputs[], Arena* a) {
     Neuron n = {0};
     n.weights = arenaAlloc(a, sizeof(Value) * wCount);
 
     while (n.weight_count < wCount) {
-        Value v = newValue(randWeight(), NULLPREV, OP_NONE);
+        Value v = newValue(randWeight(), inputs, OP_NONE);
         n.weights[n.weight_count] = v;
         n.weight_count++;
     }
@@ -207,6 +208,32 @@ static Value activateNeuron(Neuron* n, float inputs[], size_t inCount) {
     // TODO: Should this have no previous?
     // TODO: we might also want to genericise this if we use different activation functions
     return newValue(sigmoidf(val), NULLPREV, OP_ACT);
+}
+
+static Layer newLayer(Layer* prevLayer, size_t outputs, Arena* a) {
+    Layer l = {0};
+    l.neurons = arenaAlloc(a, sizeof(Neuron) * outputs);
+
+    while (l.count < outputs) {
+        Value* vs;
+        if (prevLayer) {
+            vs = arenaAlloc(a, sizeof(Value)*prevLayer->count);
+            for (size_t i = 0; i < prevLayer->count; i++) {
+                vs[i] = prevLayer->neurons[i].weights[i];
+            }
+        } else {
+            vs = *NULLPREV;
+        }
+
+        Neuron n = newNeuron(outputs, &vs, a);
+        l.neurons[l.count] = n;
+        l.count++;
+    }
+
+    return l;
+}
+
+static Value* activateLayer(Layer* l, float* inputs[], int inCount) {
 }
 
 #endif // MLP_IMPLEMENTATION
