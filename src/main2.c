@@ -42,9 +42,22 @@ int main(int argc, char* argv[]) {
     const float mlp_inputs[] = {1.0, 1.0};
 
     MLP mlp = newPerceptron(arch, arch_sz, &a);
-    Value* vs_mlp = activatePerceptron(&mlp, mlp_inputs, 2, &a);
-    for (size_t i = 0; i < arch[2]; i++) {
-        printf("Neuron value(%zu): %f\n", i, vs_mlp[i].x);
+    // Value* vs_mlp = activatePerceptron(&mlp, mlp_inputs, 2, &a);
+    // for (size_t i = 0; i < arch[2]; i++) {
+    //     printf("Neuron value(%zu): %f\n", i, vs_mlp[i].x);
+    // }
+
+
+    float xor[4][2] = {
+        {0.0, 0.0},
+        {0.0, 1.0},
+        {1.0, 0.0},
+        {1.0, 1.0},
+    };
+    float xor_outs[4] = {0.0, 1.0, 1.0, 0.0};
+    for (int i = 0; i < 4; i++) {
+        Value* vs = activatePerceptron(&mlp, xor[i], 2, &a);
+        printf("(%d) Expected: %.2f, Got: %.2f\n", i, xor_outs[i], vs[0].x);
     }
 
     arenaDestroy(&a);

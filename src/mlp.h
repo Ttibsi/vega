@@ -205,7 +205,9 @@ static Value activateNeuron(Neuron* n, Value inputs[], size_t inCount) {
 
     // TODO: Should this have no previous?
     // TODO: we might also want to genericise this if we use different activation functions
-    return newValue(sigmoidf(val), NULLPREV, OP_ACT);
+    Value v = newValue(sigmoidf(val), NULLPREV, OP_ACT);
+    printf("%f\n", v.x);
+    return v;
 }
 
 static Layer newLayer(Layer* prevLayer, size_t outputs, Arena* a) {
