@@ -16,7 +16,8 @@ int main(int argc, char* argv[]) {
     if (!cmd_run(&cmd)) { return 1; }
 #endif
 
-    cmd_append(&cmd, "gcc", "-Wall", "-Wextra", "-std=c23", "-g");
+    cmd_append(&cmd, "gcc", "-std=c23", "-g");
+    // cmd_append(&cmd, "-Wall", "-Wextra");
     cmd_append(&cmd, "-lm");
     cmd_append(&cmd, "src/main2.c");
     cmd_append(&cmd, "-o", exec_name);

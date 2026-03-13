@@ -50,7 +50,7 @@ typedef struct {
 // note: inCount is the number of connections into this neuron
 // wCount == inCount
 static Neuron newNeuron(size_t wCount, Value* inputs[], Arena* a);
-static Value activateNeuron(Neuron*, float inputs[], size_t inCount);
+static Value activateNeuron(Neuron*, Value inputs[], size_t inCount);
 
 // functionally an array of neurons, but doesn't need to be a dynamic array
 typedef struct {
@@ -60,7 +60,7 @@ typedef struct {
 } Layer;
 
 static Layer newLayer(Layer* prevLayer, size_t outputs, Arena* a);
-static Value* activateLayer(Layer* l, float inputs[], int inCount, Arena* a);
+static Value* activateLayer(Layer* l, Value* vs, int inCount, Arena* a);
 
 typedef struct {
     Layer* layers;
@@ -68,7 +68,7 @@ typedef struct {
 } MLP;
 
 static MLP newPerceptron(size_t* arch, size_t arch_sz, Arena* a);
-static Value* activatePerceptron(MLP* mlp, float* inputs, float inCount);
+static Value* activatePerceptron(MLP* mlp, float* inputs, size_t inCount, Arena* a);
 static void gradientDescent(MLP* mlp, size_t learnRate);
 static void trainPerceptron(MLP* mlp, size_t iterations, size_t learnRate);
 
@@ -77,6 +77,7 @@ static void trainPerceptron(MLP* mlp, size_t iterations, size_t learnRate);
 #include <assert.h>
 #include <math.h>
 #include <stdlib.h>
+#include <string.h>
 
 static float sigmoidf(float x) {
     return 1.f / (1.f + expf(x));
@@ -194,12 +195,12 @@ static Neuron newNeuron(size_t wCount, Value* inputs[], Arena* a) {
     return n;
 }
 
-static Value activateNeuron(Neuron* n, float inputs[], size_t inCount) {
+static Value activateNeuron(Neuron* n, Value inputs[], size_t inCount) {
     assert(inCount >= n->weight_count);
 
     float val = n->bias.x;
     for (size_t i = 0; i < n->weight_count; i++) {
-        val += (n->weights[i].x * inputs[i]);
+        val += (n->weights[i].x * inputs[i].x);
     }
 
     // TODO: Should this have no previous?
@@ -230,11 +231,14 @@ static Layer newLayer(Layer* prevLayer, size_t outputs, Arena* a) {
     return l;
 }
 
-static Value* activateLayer(Layer* l, float inputs[], int inCount, Arena* a) {
-    Value* vs = arenaAlloc(a, sizeof(Value) * inCount);
-    
+static Value* activateLayer(Layer* l, Value* vs, int inCount, Arena* a) {
+    if (inCount < l->count) {
+        Value* newVs = arenaAlloc(a, sizeof(Value) * l->count);
+        vs = memmove(newVs, vs, inCount);
+    }
+
     for (size_t i = 0; i < l->count; i++) {
-        vs[i] = activateNeuron(&l->neurons[i], inputs, inCount);
+        vs[i] = activateNeuron(&l->neurons[i], vs, inCount);
     }
 
     return vs;
@@ -255,7 +259,18 @@ static MLP newPerceptron(size_t* arch, size_t arch_sz, Arena* a) {
     return mlp;
 }
 
-static Value* activatePerceptron(MLP* mlp, float* inputs, float inCount) {
+static Value* activatePerceptron(MLP* mlp, float* inputs, size_t inCount, Arena* a) {
+    Value* vs = arenaAlloc(a, sizeof(Value) * inCount);
+
+    for (size_t i = 0; i < inCount; i++) {
+        vs[i] = newValue(inputs[i], NULLPREV, OP_NONE);
+    }
+
+    for (size_t i = 0; i < mlp->layerCount; i++) {
+        vs = activateLayer(&mlp->layers[i], vs, inCount, a);
+    }
+
+    return vs;
 }
 
 // note: will need to set all grads to 0 on each iteration

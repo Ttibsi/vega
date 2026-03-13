@@ -18,6 +18,7 @@ int main(int argc, char* argv[]) {
     Arena a = {0};
     arenaInit(&a, sizeof(Value) * 1024);
 
+    /*
     // Neuron test
     arenaReset(&a);
     Neuron n = newNeuron(4, NULLPREV, &a);
@@ -28,16 +29,23 @@ int main(int argc, char* argv[]) {
     // Layer test
     arenaReset(&a);
     Layer l = newLayer(NULL, 2, &a);
-    Value* vs = activateLayer(&l, inputs, 4, &a);
+    Value* vs_l = activateLayer(&l, inputs, 4, &a);
     for (size_t i = 0; i < 4; i++) {
-        printf("Neuron value(%zu): %f\n", i, vs[i].x);
+        printf("Neuron value(%zu): %f\n", i, vs_l[i].x);
     }
+    */
 
     // MLP test
     arenaReset(&a);
-    size_t arch[] = {2, 2, 1};
-    size_t arch_sz = sizeof(arch) / sizeof(arch[0]);
+    const size_t arch[] = {2, 2, 1};
+    const size_t arch_sz = sizeof(arch) / sizeof(arch[0]);
+    const float mlp_inputs[] = {1.0, 1.0};
+
     MLP mlp = newPerceptron(arch, arch_sz, &a);
+    Value* vs_mlp = activatePerceptron(&mlp, mlp_inputs, 2, &a);
+    for (size_t i = 0; i < arch[2]; i++) {
+        printf("Neuron value(%zu): %f\n", i, vs_mlp[i].x);
+    }
 
     arenaDestroy(&a);
     return 0;
