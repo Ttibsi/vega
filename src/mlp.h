@@ -3,6 +3,9 @@
 
 #include <stddef.h>
 
+// TODO: Defined by user? Not sure where this should be placed
+constexpr float margin = 0.01f;
+
 static float sigmoidf(float);
 static float sigmoidfDerivative(float);
 static float randWeight(void);
@@ -59,17 +62,19 @@ typedef struct {
     size_t out_conns;
 } Layer;
 
+
 static Layer newLayer(Layer* prevLayer, size_t outputs, Arena* a);
-static Value* activateLayer(Layer* l, Value* vs, int inCount, Arena* a);
+static Value* activateLayer(Layer* l, Value* vs, size_t inCount, Arena* a);
 
 typedef struct {
     Layer* layers;
     size_t layerCount;
 } MLP;
 
-static MLP newPerceptron(size_t* arch, size_t arch_sz, Arena* a);
+static MLP newPerceptron(const size_t* arch, const size_t arch_sz, Arena* a);
 static Value* activatePerceptron(MLP* mlp, float* inputs, size_t inCount, Arena* a);
-static void gradientDescent(MLP* mlp, size_t learnRate);
+static void zeroGrad(MLP* mlp);
+static void gradientDescent(MLP* mlp, float learnRate);
 static void trainPerceptron(MLP* mlp, Arena* a, float* inputs, size_t inCount, float* expected, float learnRate);
 
 #ifdef MLP_IMPLEMENTATION
@@ -232,7 +237,7 @@ static Layer newLayer(Layer* prevLayer, size_t outputs, Arena* a) {
     return l;
 }
 
-static Value* activateLayer(Layer* l, Value* vs, int inCount, Arena* a) {
+static Value* activateLayer(Layer* l, Value* vs, size_t inCount, Arena* a) {
     if (inCount < l->neuronCount) {
         Value* newVs = arenaAlloc(a, sizeof(Value) * l->neuronCount);
         vs = memmove(newVs, vs, inCount);
@@ -245,7 +250,7 @@ static Value* activateLayer(Layer* l, Value* vs, int inCount, Arena* a) {
     return vs;
 }
 
-static MLP newPerceptron(size_t* arch, size_t arch_sz, Arena* a) {
+static MLP newPerceptron(const size_t* arch, const size_t arch_sz, Arena* a) {
     MLP mlp = {0};
     mlp.layers = arenaAlloc(a, sizeof(Layer) * arch_sz);
     mlp.layerCount = arch_sz;
@@ -274,8 +279,28 @@ static Value* activatePerceptron(MLP* mlp, float* inputs, size_t inCount, Arena*
     return vs;
 }
 
-// note: will need to set all grads to 0 on each iteration
-static void gradientDescent(MLP* mlp, size_t learnRate) {
+static void zeroGrad(MLP* mlp) {
+    for (size_t i = mlp->layerCount - 1; i > 0; i--) {
+        for (size_t j = 0; j < mlp->layers[i].neuronCount; j++) {
+            for (size_t k = 0; k < mlp->layers[i].neurons[j].weightCount; k++) {
+                Value* v = &mlp->layers[i].neurons[j].weights[k];
+                v->grad = 0.0f;
+            }
+        }
+    }
+}
+
+static void gradientDescent(MLP* mlp, float learnRate) {
+    for (size_t i = mlp->layerCount - 1; i > 0; i--) {
+        for (size_t j = 0; j < mlp->layers[i].neuronCount; j++) {
+            for (size_t k = 0; k < mlp->layers[i].neurons[j].weightCount; k++) {
+                // do something to each value
+                Value* v = &mlp->layers[i].neurons[j].weights[k];
+                v->x += -learnRate * v->grad;
+
+            }
+        }
+    }
 }
 
 static void trainPerceptron(MLP* mlp, Arena* a, float* inputs, size_t inCount, float* expected, float learnRate) {
@@ -288,17 +313,27 @@ static void trainPerceptron(MLP* mlp, Arena* a, float* inputs, size_t inCount, f
         loss += powf(vs[i].x - expected[i], 2);
     }
 
+    if (loss < margin) { return; }
+
     // backpropagate
-    // Start at last layer
+    zeroGrad(mlp);
     for (size_t i = mlp->layerCount - 1; i > 0; i--) {
         for (size_t j = 0; j < mlp->layers[i].neuronCount; j++) {
             for (size_t k = 0; k < mlp->layers[i].neurons[j].weightCount; k++) {
-                // do something to each value
                 Value* v = &mlp->layers[i].neurons[j].weights[k];
                 backprop(v);
             }
         }
     }
+
+    gradientDescent(mlp, learnRate);
+
+    // print values
+    for (int i = 0; i < inCount; i++) {
+        printf("%f, ", vs[i].x);
+    }
+    printf("\n");
+
 }
 
 #endif // MLP_IMPLEMENTATION

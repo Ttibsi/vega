@@ -58,7 +58,7 @@ int main(int argc, char* argv[]) {
     const int iterations = 100;
     for (int i = 0; i < iterations; i++) { 
         for (int j = 0; j < 4; j++) {
-            trainPerceptron(&mlp, &a, xor[j], 2, &xor_outs[j], 0.1);
+            trainPerceptron(&mlp, &a, xor[j], 2, &xor_outs[j], 0.05);
         }
     }
 
