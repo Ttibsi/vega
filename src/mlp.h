@@ -43,7 +43,7 @@ static void backprop(Value* this);
 
 typedef struct {
     Value* weights;
-    size_t weight_count;
+    size_t weightCount;
     Value bias;
 } Neuron;
 
@@ -55,7 +55,7 @@ static Value activateNeuron(Neuron*, Value inputs[], size_t inCount);
 // functionally an array of neurons, but doesn't need to be a dynamic array
 typedef struct {
     Neuron* neurons;
-    size_t count;
+    size_t neuronCount;
     size_t out_conns;
 } Layer;
 
@@ -70,7 +70,7 @@ typedef struct {
 static MLP newPerceptron(size_t* arch, size_t arch_sz, Arena* a);
 static Value* activatePerceptron(MLP* mlp, float* inputs, size_t inCount, Arena* a);
 static void gradientDescent(MLP* mlp, size_t learnRate);
-static void trainPerceptron(MLP* mlp, size_t iterations, size_t learnRate);
+static void trainPerceptron(MLP* mlp, Arena* a, float* inputs, size_t inCount, float* expected, float learnRate);
 
 #ifdef MLP_IMPLEMENTATION
 
@@ -185,10 +185,10 @@ static Neuron newNeuron(size_t wCount, Value* inputs[], Arena* a) {
     Neuron n = {0};
     n.weights = arenaAlloc(a, sizeof(Value) * wCount);
 
-    while (n.weight_count < wCount) {
+    while (n.weightCount < wCount) {
         Value v = newValue(randWeight(), inputs, OP_NONE);
-        n.weights[n.weight_count] = v;
-        n.weight_count++;
+        n.weights[n.weightCount] = v;
+        n.weightCount++;
     }
 
     n.bias = newValue(0.0f, NULLPREV, OP_NONE);
@@ -196,17 +196,16 @@ static Neuron newNeuron(size_t wCount, Value* inputs[], Arena* a) {
 }
 
 static Value activateNeuron(Neuron* n, Value inputs[], size_t inCount) {
-    assert(inCount >= n->weight_count);
+    assert(inCount >= n->weightCount);
 
     float val = n->bias.x;
-    for (size_t i = 0; i < n->weight_count; i++) {
+    for (size_t i = 0; i < n->weightCount; i++) {
         val += (n->weights[i].x * inputs[i].x);
     }
 
     // TODO: Should this have no previous?
     // TODO: we might also want to genericise this if we use different activation functions
     Value v = newValue(sigmoidf(val), NULLPREV, OP_ACT);
-    printf("%f\n", v.x);
     return v;
 }
 
@@ -214,11 +213,11 @@ static Layer newLayer(Layer* prevLayer, size_t outputs, Arena* a) {
     Layer l = {0};
     l.neurons = arenaAlloc(a, sizeof(Neuron) * outputs);
 
-    while (l.count < outputs) {
+    while (l.neuronCount < outputs) {
         Value* vs;
         if (prevLayer) {
-            vs = arenaAlloc(a, sizeof(Value)*prevLayer->count);
-            for (size_t i = 0; i < prevLayer->count; i++) {
+            vs = arenaAlloc(a, sizeof(Value)*prevLayer->neuronCount);
+            for (size_t i = 0; i < prevLayer->neuronCount; i++) {
                 vs[i] = prevLayer->neurons[i].weights[i];
             }
         } else {
@@ -226,20 +225,20 @@ static Layer newLayer(Layer* prevLayer, size_t outputs, Arena* a) {
         }
 
         Neuron n = newNeuron(outputs, &vs, a);
-        l.neurons[l.count] = n;
-        l.count++;
+        l.neurons[l.neuronCount] = n;
+        l.neuronCount++;
     }
 
     return l;
 }
 
 static Value* activateLayer(Layer* l, Value* vs, int inCount, Arena* a) {
-    if (inCount < l->count) {
-        Value* newVs = arenaAlloc(a, sizeof(Value) * l->count);
+    if (inCount < l->neuronCount) {
+        Value* newVs = arenaAlloc(a, sizeof(Value) * l->neuronCount);
         vs = memmove(newVs, vs, inCount);
     }
 
-    for (size_t i = 0; i < l->count; i++) {
+    for (size_t i = 0; i < l->neuronCount; i++) {
         vs[i] = activateNeuron(&l->neurons[i], vs, inCount);
     }
 
@@ -279,8 +278,27 @@ static Value* activatePerceptron(MLP* mlp, float* inputs, size_t inCount, Arena*
 static void gradientDescent(MLP* mlp, size_t learnRate) {
 }
 
-// for iterations, step forward, calculate loss, backprop, update backwar
-static void trainPerceptron(MLP* mlp, size_t iterations, size_t learnRate) {
+static void trainPerceptron(MLP* mlp, Arena* a, float* inputs, size_t inCount, float* expected, float learnRate) {
+    // Feed forward
+    Value* vs = activatePerceptron(mlp, inputs, inCount, a);
+
+    // Calculate mean-squared error loss
+    float loss = 0.0;
+    for (size_t i = 0; i < inCount; i++) {
+        loss += powf(vs[i].x - expected[i], 2);
+    }
+
+    // backpropagate
+    // Start at last layer
+    for (size_t i = mlp->layerCount - 1; i > 0; i--) {
+        for (size_t j = 0; j < mlp->layers[i].neuronCount; j++) {
+            for (size_t k = 0; k < mlp->layers[i].neurons[j].weightCount; k++) {
+                // do something to each value
+                Value* v = &mlp->layers[i].neurons[j].weights[k];
+                backprop(v);
+            }
+        }
+    }
 }
 
 #endif // MLP_IMPLEMENTATION
