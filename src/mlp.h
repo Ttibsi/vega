@@ -1,4 +1,5 @@
--*- mode: c; -*-
+// vim: set ft=c
+// -*- mode: c; -*-
 #ifndef MLP_H
 #define MLP_H
 
