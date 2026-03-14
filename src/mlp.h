@@ -4,7 +4,7 @@
 #include <stddef.h>
 
 // TODO: Defined by user? Not sure where this should be placed
-constexpr float margin = 0.01f;
+constexpr float margin = 0.05f;
 
 static float sigmoidf(float);
 static float sigmoidfDerivative(float);
@@ -42,7 +42,7 @@ static Value newValue(float x, Value* prev[static 2], Op op);
 static Value plusValue(Value* lhs, Value* rhs);
 static Value mulValue(Value* lhs, Value* rhs);
 static Value activateValue(Value* val, float(*activation)(float));
-static void backprop(Value* this); 
+static void backprop(Value* this);
 
 typedef struct {
     Value* weights;
@@ -75,12 +75,14 @@ static MLP newPerceptron(const size_t* arch, const size_t arch_sz, Arena* a);
 static Value* activatePerceptron(MLP* mlp, float* inputs, size_t inCount, Arena* a);
 static void zeroGrad(MLP* mlp);
 static void gradientDescent(MLP* mlp, float learnRate);
-static void trainPerceptron(MLP* mlp, Arena* a, float* inputs, size_t inCount, float* expected, float learnRate);
+static bool trainPerceptron(MLP* mlp, Arena* a, float* inputs, size_t inCount, float* expected, float learnRate);
+static void displayPerceptron(MLP* mlp);
 
 #ifdef MLP_IMPLEMENTATION
 
 #include <assert.h>
 #include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -203,6 +205,7 @@ static Neuron newNeuron(size_t wCount, Value* inputs[], Arena* a) {
 static Value activateNeuron(Neuron* n, Value inputs[], size_t inCount) {
     assert(inCount >= n->weightCount);
 
+    // TODO: Is this the right place to set ops and prevs?
     float val = n->bias.x;
     for (size_t i = 0; i < n->weightCount; i++) {
         val += (n->weights[i].x * inputs[i].x);
@@ -303,7 +306,7 @@ static void gradientDescent(MLP* mlp, float learnRate) {
     }
 }
 
-static void trainPerceptron(MLP* mlp, Arena* a, float* inputs, size_t inCount, float* expected, float learnRate) {
+static bool trainPerceptron(MLP* mlp, Arena* a, float* inputs, size_t inCount, float* expected, float learnRate) {
     // Feed forward
     Value* vs = activatePerceptron(mlp, inputs, inCount, a);
 
@@ -313,7 +316,8 @@ static void trainPerceptron(MLP* mlp, Arena* a, float* inputs, size_t inCount, f
         loss += powf(vs[i].x - expected[i], 2);
     }
 
-    if (loss < margin) { return; }
+    // printf("Loss: %.5f ", loss);
+    if (fabs(loss - expected[0]) <= margin) { return false; }
 
     // backpropagate
     zeroGrad(mlp);
@@ -327,13 +331,21 @@ static void trainPerceptron(MLP* mlp, Arena* a, float* inputs, size_t inCount, f
     }
 
     gradientDescent(mlp, learnRate);
+    return true;
+}
 
-    // print values
-    for (int i = 0; i < inCount; i++) {
-        printf("%f, ", vs[i].x);
+static void displayPerceptron(MLP* mlp) {
+    for (size_t i = 0; i < mlp->layerCount; i++) {
+        printf("Layer: %zu\n", i);
+        for (size_t j = 0; j < mlp->layers[i].neuronCount; j++) {
+            printf("\tNeuron: %zu\n", j);
+            for (size_t k = 0; k < mlp->layers[i].neurons[j].weightCount; k++) {
+                // do something to each value
+                Value* v = &mlp->layers[i].neurons[j].weights[k];
+                printf("\t\tValue: %.4f Gradient: %.4f, Op: %i\n", v->x, v->grad, v->op);
+            }
+        }
     }
-    printf("\n");
-
 }
 
 #endif // MLP_IMPLEMENTATION

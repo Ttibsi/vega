@@ -54,13 +54,17 @@ int main(int argc, char* argv[]) {
     //     Value* vs = activatePerceptron(&mlp, xor[i], 2, &a);
     //     printf("(%d) Expected: %.2f, Got: %.2f\n", i, xor_outs[i], vs[0].x);
     // }
-    
+
     const int iterations = 100;
-    for (int i = 0; i < iterations; i++) { 
+    for (int i = 0; i < iterations; i++) {
         for (int j = 0; j < 4; j++) {
-            trainPerceptron(&mlp, &a, xor[j], 2, &xor_outs[j], 0.05);
+            if (!trainPerceptron(&mlp, &a, xor[j], 2, &xor_outs[j], 0.05)) {
+                goto finish;
+            }
         }
     }
+
+finish:
 
     arenaDestroy(&a);
     return 0;
