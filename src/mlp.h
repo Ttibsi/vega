@@ -1,3 +1,4 @@
+vim: set ft=c
 #ifndef MLP_H
 #define MLP_H
 
