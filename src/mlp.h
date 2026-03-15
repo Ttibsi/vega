@@ -27,6 +27,7 @@ typedef struct {
 typedef enum {
     OP_NONE,
     OP_PLUS,
+    OP_MINUS,
     OP_MUL,
     OP_ACT
 } Op;
@@ -34,13 +35,12 @@ typedef enum {
 typedef struct _Value {
     float x;
     float grad;
-    struct _Value* prev[2];
+    struct _Value* prev;
+    size_t prevLen;
     Op op;
 } Value;
 
-static Value* NULLPREV[2] = { NULL, NULL };
-
-[[maybe_unused]] static Value newValue(float x, Value* prev[static 2], Op op);
+[[maybe_unused]] static Value newValue(float x, Value* prev, size_t prevLen, Op op);
 [[maybe_unused]] static Value plusValue(Value* lhs, Value* rhs);
 [[maybe_unused]] static Value minusValue(Value* lhs, Value* rhs);
 [[maybe_unused]] static Value mulValue(Value* lhs, Value* rhs);
@@ -141,39 +141,37 @@ typedef struct {
     a->size = 0;
 }
 
-[[maybe_unused]] static Value newValue(float x, Value* prev[static 2], Op op) {
+[[maybe_unused]] static Value newValue(float x, Value* prev, size_t prevLen, Op op) {
     return (Value){
         .x = x,
         .grad = 0.0f,
-        .prev[0] = prev[0],
-        .prev[1] = prev[1],
+        .prev = prev,
+        .prevLen = prevLen,
         .op = op
     };
 }
 
 [[maybe_unused]] static Value plusValue(Value* lhs, Value* rhs) {
     Value* prev[2] = {lhs, rhs};
-    return newValue(lhs->x + rhs->x, prev, OP_PLUS);
+    return newValue(lhs->x + rhs->x, prev, 2, OP_PLUS);
 }
 
 [[maybe_unused]] static Value minusValue(Value* lhs, Value* rhs) {
     Value* prev[2] = {lhs, rhs};
-    return newValue(lhs->x - rhs->x, prev, OP_PLUS);
+    return newValue(lhs->x - rhs->x, prev, 2, OP_MINUS);
 }
 
 [[maybe_unused]] static Value mulValue(Value* lhs, Value* rhs) {
     Value* prev[2] = {lhs, rhs};
-    return newValue(lhs->x * rhs->x, prev, OP_MUL);
+    return newValue(lhs->x * rhs->x, prev, 2, OP_MUL);
 }
 
 [[maybe_unused]] static Value activateValue(Value* val, float(*activation)(float)) {
-    Value* prev[2] = {val, NULL};
-    return newValue(activation(val->x), prev, OP_ACT);
+    return newValue(activation(val->x), val, 1, OP_ACT);
 }
 
 [[maybe_unused]] static void backprop(Value* this) {
-    // base case - the final element should have a gradient of 1.0
-    if (!this->grad) { this->grad = 1.0; }
+    // if (this->prev[0] == NULL) { return; }
 
     if (this->op == OP_PLUS) {
         this->prev[0]->grad += this->grad;
@@ -196,32 +194,31 @@ typedef struct {
     }
 }
 
-[[maybe_unused]] static Neuron newNeuron(size_t wCount, Value* inputs[], Arena* a) {
+[[maybe_unused]] static Neuron newNeuron(size_t wCount, Value* inputs[], size_t inputLen, Arena* a) {
     Neuron n = {0};
     n.weights = arenaAlloc(a, sizeof(Value) * wCount);
 
     while (n.weightCount < wCount) {
-        Value v = newValue(randWeight(), inputs, OP_NONE);
+        Value v = newValue(randWeight(), inputs, inputLen, OP_NONE);
         n.weights[n.weightCount] = v;
         n.weightCount++;
     }
 
-    n.bias = newValue(0.0f, NULLPREV, OP_NONE);
+    n.bias = newValue(0.0f, NULL, 0, OP_NONE);
     return n;
 }
 
 [[maybe_unused]] static Value activateNeuron(Neuron* n, Value inputs[], size_t inCount) {
     assert(inCount >= n->weightCount);
-
+}
     // TODO: Is this the right place to set ops and prevs?
     float val = n->bias.x;
     for (size_t i = 0; i < n->weightCount; i++) {
         val += (n->weights[i].x * inputs[i].x);
     }
 
-    // TODO: Should this have no previous?
     // TODO: we might also want to genericise this if we use different activation functions
-    Value v = newValue(sigmoidf(val), NULLPREV, OP_ACT);
+    Value v = newValue(sigmoidf(val), inputs, inCount, OP_ACT);
     return v;
 }
 
@@ -231,14 +228,12 @@ typedef struct {
     l.neuronCount = 0;
 
     while (l.neuronCount < outputs) {
-        Value* vs;
+        Value* vs = NULL;
         if (prevLayer) {
             vs = arenaAlloc(a, sizeof(Value)*prevLayer->neuronCount);
             for (size_t i = 0; i < prevLayer->neuronCount; i++) {
                 vs[i] = prevLayer->neurons[i].weights[i];
             }
-        } else {
-            vs = *NULLPREV;
         }
 
         Neuron n = newNeuron(outputs, &vs, a);
@@ -285,7 +280,7 @@ typedef struct {
     Value* vs = arenaAlloc(a, sizeof(Value) * inSizes[0]);
 
     for (size_t i = 0; i < inSizes[0]; i++) {
-        vs[i] = newValue(inputs[i], NULLPREV, OP_NONE);
+        vs[i] = newValue(inputs[i], NULL, 0, OP_NONE);
     }
 
     for (size_t i = 0; i < mlp->layerCount; i++) {
@@ -323,31 +318,32 @@ typedef struct {
     // Feed forward
     Value* vs = activatePerceptron(mlp, inputs, inSizes, a);
 
-    // Calculate mean-square error loss
-    Value loss = newValue(0.0f, NULLPREV, OP_NONE);
-    for (size_t i = 0; i < mlp->arch[mlp->layerCount - 1]; i++) {
-        // actual - expected
-        Value v = newValue(expected[i], NULLPREV, OP_NONE);
-        Value diff = minusValue(&vs[i], &v);
-        // square it
-        Value sq = mulValue(&diff, &diff);
+    // Calculate mean-square error loss using heap-allocated Values
+    Value* loss = arenaAlloc(a, sizeof(Value));
+    *loss = newValue(0.0f, NULL, 0, OP_NONE);
 
-        // add all values up
-        loss = plusValue(&loss, &sq);
+    for (size_t i = 0; i < mlp->arch[mlp->layerCount - 1]; i++) {
+        Value* target = arenaAlloc(a, sizeof(Value));
+        *target = newValue(expected[i], NULL, 0, OP_NONE);
+
+        Value* diff = arenaAlloc(a, sizeof(Value));
+        *diff = minusValue(&vs[i], target);
+
+        Value* sq = arenaAlloc(a, sizeof(Value));
+        *sq = mulValue(diff, diff);
+
+        Value* newLoss = arenaAlloc(a, sizeof(Value));
+        *newLoss = plusValue(loss, sq);
+
+        loss = newLoss;
     }
 
-    if (fabs(loss.x) <= margin) { return false; }
+    if (fabs(loss->x) <= margin) { return false; }
 
     // backpropagate
     zeroGrad(mlp);
-    for (size_t i = mlp->layerCount - 1; i > 0; i--) {
-        for (size_t j = 0; j < mlp->layers[i].neuronCount; j++) {
-            for (size_t k = 0; k < mlp->layers[i].neurons[j].weightCount; k++) {
-                Value* v = &mlp->layers[i].neurons[j].weights[k];
-                backprop(v);
-            }
-        }
-    }
+    loss->grad = 1.0f;
+    backprop(loss);
 
     gradientDescent(mlp, learnRate);
     return true;
