@@ -326,7 +326,7 @@ typedef struct {
     // Calculate mean-square error loss
     Value loss = newValue(0.0f, NULLPREV, OP_NONE);
     for (size_t i = 0; i < mlp->arch[mlp->layerCount - 1]; i++) {
-        // actual - expected 
+        // actual - expected
         Value v = newValue(expected[i], NULLPREV, OP_NONE);
         Value diff = minusValue(&vs[i], &v);
         // square it
@@ -361,7 +361,7 @@ typedef struct {
             for (size_t k = 0; k < mlp->layers[i].neurons[j].weightCount; k++) {
                 // do something to each value
                 Value* v = &mlp->layers[i].neurons[j].weights[k];
-                printf("\t\tValue: %.4f Gradient: %.4f, Op: %i\n", v->x, v->grad, v->op);
+                printf("\t\tValue: %.4f Gradient: %.4f\n", v->x, v->grad);
             }
         }
     }
