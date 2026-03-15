@@ -7,6 +7,7 @@ int main(int argc, char* argv[]) {
     (void)argc;
     (void)argv;
 
+#if 0
     /*
     // Value test
     Value a = newValue(4.0, NULLPREV, OP_NONE);
@@ -37,9 +38,8 @@ int main(int argc, char* argv[]) {
 
     // MLP test
     arenaReset(&a);
-    const size_t arch[] = {2, 2, 1};
-    const size_t arch_sz = sizeof(arch) / sizeof(arch[0]);
-    const float mlp_inputs[] = {1.0, 1.0};
+    size_t arch[] = {2, 2, 1};
+    size_t arch_sz = sizeof(arch) / sizeof(arch[0]);
 
     MLP mlp = newPerceptron(arch, arch_sz, &a);
 
@@ -67,5 +67,7 @@ int main(int argc, char* argv[]) {
 finish:
 
     arenaDestroy(&a);
+#endif // if 0
+
     return 0;
 }

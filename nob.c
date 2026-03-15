@@ -4,7 +4,6 @@
 const char* exec_name = "vega";
 
 int buildFile(Cmd* cmd, char* file, char* exec) {
-    nob_log(NOB_INFO, "Bulding: %s\n", exec);
     cmd_append(cmd, "gcc", "-std=c23", "-g");
     cmd_append(cmd, "-Wall", "-Wextra");
     cmd_append(cmd, "-lm");

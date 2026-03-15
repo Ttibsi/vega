@@ -8,9 +8,9 @@
 // TODO: Defined by user? Not sure where this should be placed
 constexpr float margin = 0.05f;
 
-static float sigmoidf(float);
-static float sigmoidfDerivative(float);
-static float randWeight(void);
+[[maybe_unused]] static float sigmoidf(float);
+[[maybe_unused]] static float sigmoidfDerivative(float);
+[[maybe_unused]] static float randWeight(void);
 
 typedef struct {
     // pointer arithmetic on void* isn't standard C
@@ -19,10 +19,10 @@ typedef struct {
     size_t size;
 } Arena;
 
-static int   arenaInit(Arena* a, size_t capacity);
-static void* arenaAlloc(Arena* a, size_t allocSize);
-static void  arenaReset(Arena* a);
-static void  arenaDestroy(Arena* a);
+[[maybe_unused]] static int   arenaInit(Arena* a, size_t capacity);
+[[maybe_unused]] static void* arenaAlloc(Arena* a, size_t allocSize);
+[[maybe_unused]] static void  arenaReset(Arena* a);
+[[maybe_unused]] static void  arenaDestroy(Arena* a);
 
 typedef enum {
     OP_NONE,
@@ -40,11 +40,12 @@ typedef struct _Value {
 
 static Value* NULLPREV[2] = { NULL, NULL };
 
-static Value newValue(float x, Value* prev[static 2], Op op);
-static Value plusValue(Value* lhs, Value* rhs);
-static Value mulValue(Value* lhs, Value* rhs);
-static Value activateValue(Value* val, float(*activation)(float));
-static void backprop(Value* this);
+[[maybe_unused]] static Value newValue(float x, Value* prev[static 2], Op op);
+[[maybe_unused]] static Value plusValue(Value* lhs, Value* rhs);
+[[maybe_unused]] static Value minusValue(Value* lhs, Value* rhs);
+[[maybe_unused]] static Value mulValue(Value* lhs, Value* rhs);
+[[maybe_unused]] static Value activateValue(Value* val, float(*activation)(float));
+[[maybe_unused]] static void backprop(Value* this);
 
 typedef struct {
     Value* weights;
@@ -54,31 +55,31 @@ typedef struct {
 
 // note: inCount is the number of connections into this neuron
 // wCount == inCount
-static Neuron newNeuron(size_t wCount, Value* inputs[], Arena* a);
-static Value activateNeuron(Neuron*, Value inputs[], size_t inCount);
+[[maybe_unused]] static Neuron newNeuron(size_t wCount, Value* inputs[], Arena* a);
+[[maybe_unused]] static Value activateNeuron(Neuron*, Value inputs[], size_t inCount);
 
 // functionally an array of neurons, but doesn't need to be a dynamic array
 typedef struct {
     Neuron* neurons;
     size_t neuronCount;
-    size_t out_conns;
 } Layer;
 
 
-static Layer newLayer(Layer* prevLayer, size_t outputs, Arena* a);
-static Value* activateLayer(Layer* l, Value* vs, size_t inCount, Arena* a);
+[[maybe_unused]] static Layer newLayer(Layer* prevLayer, size_t outputs, Arena* a);
+[[maybe_unused]] static Value* activateLayer(Layer* l, Value* vs, size_t valueCount, Arena* a);
 
 typedef struct {
     Layer* layers;
+    size_t* arch;
     size_t layerCount;
 } MLP;
 
-static MLP newPerceptron(const size_t* arch, const size_t arch_sz, Arena* a);
-static Value* activatePerceptron(MLP* mlp, float* inputs, size_t inCount, Arena* a);
-static void zeroGrad(MLP* mlp);
-static void gradientDescent(MLP* mlp, float learnRate);
-static bool trainPerceptron(MLP* mlp, Arena* a, float* inputs, size_t inCount, float* expected, float learnRate);
-static void displayPerceptron(MLP* mlp);
+[[maybe_unused]] static MLP newPerceptron(size_t* arch, size_t arch_sz, Arena* a);
+[[maybe_unused]] static Value* activatePerceptron(MLP* mlp, float* inputs, size_t* inSizes, Arena* a);
+[[maybe_unused]] static void zeroGrad(MLP* mlp);
+[[maybe_unused]] static void gradientDescent(MLP* mlp, float learnRate);
+[[maybe_unused]] static bool trainPerceptron(MLP* mlp, Arena* a, float* inputs, size_t* inSizes, float* expected, float learnRate);
+[[maybe_unused]] static void displayPerceptron(MLP* mlp);
 
 #ifdef MLP_IMPLEMENTATION
 
@@ -88,23 +89,23 @@ static void displayPerceptron(MLP* mlp);
 #include <stdlib.h>
 #include <string.h>
 
-static float sigmoidf(float x) {
+[[maybe_unused]] static float sigmoidf(float x) {
     return 1.f / (1.f + expf(x));
 }
 
-static float sigmoidfDerivative(float x) {
+[[maybe_unused]] static float sigmoidfDerivative(float x) {
     return x * (1 - x);
 }
 
 // https://stackoverflow.com/a/13409005
-static float randWeight(void) {
+[[maybe_unused]] static float randWeight(void) {
     const float min = -1.0f;
     const float max = 1.0f;
 
     return ((max - min) * ((float)rand() / RAND_MAX)) + min;
 }
 
-static int arenaInit(Arena* a, size_t capacity) {
+[[maybe_unused]] static int arenaInit(Arena* a, size_t capacity) {
     if (!a || capacity == 0) { return 0; }
 
     a->memory = (unsigned char*)malloc(capacity);
@@ -116,7 +117,7 @@ static int arenaInit(Arena* a, size_t capacity) {
     return 1;
 }
 
-static void* arenaAlloc(Arena* a, size_t allocSize) {
+[[maybe_unused]] static void* arenaAlloc(Arena* a, size_t allocSize) {
     if (!a || allocSize == 0) { return NULL; }
     if (a->size + allocSize > a->capacity) { return NULL; }
 
@@ -126,12 +127,12 @@ static void* arenaAlloc(Arena* a, size_t allocSize) {
     return ptr;
 }
 
-static void arenaReset(Arena* a) {
+[[maybe_unused]] static void arenaReset(Arena* a) {
     if (!a) { return; }
     a->size = 0;
 }
 
-static void arenaDestroy(Arena* a) {
+[[maybe_unused]] static void arenaDestroy(Arena* a) {
     if (!a) { return; }
 
     free(a->memory);
@@ -140,7 +141,7 @@ static void arenaDestroy(Arena* a) {
     a->size = 0;
 }
 
-static Value newValue(float x, Value* prev[static 2], Op op) {
+[[maybe_unused]] static Value newValue(float x, Value* prev[static 2], Op op) {
     return (Value){
         .x = x,
         .grad = 0.0f,
@@ -150,22 +151,27 @@ static Value newValue(float x, Value* prev[static 2], Op op) {
     };
 }
 
-static Value plusValue(Value* lhs, Value* rhs) {
+[[maybe_unused]] static Value plusValue(Value* lhs, Value* rhs) {
     Value* prev[2] = {lhs, rhs};
     return newValue(lhs->x + rhs->x, prev, OP_PLUS);
 }
 
-static Value mulValue(Value* lhs, Value* rhs) {
+[[maybe_unused]] static Value minusValue(Value* lhs, Value* rhs) {
+    Value* prev[2] = {lhs, rhs};
+    return newValue(lhs->x - rhs->x, prev, OP_PLUS);
+}
+
+[[maybe_unused]] static Value mulValue(Value* lhs, Value* rhs) {
     Value* prev[2] = {lhs, rhs};
     return newValue(lhs->x * rhs->x, prev, OP_MUL);
 }
 
-static Value activateValue(Value* val, float(*activation)(float)) {
-    Value* prev[2] = {val};
+[[maybe_unused]] static Value activateValue(Value* val, float(*activation)(float)) {
+    Value* prev[2] = {val, NULL};
     return newValue(activation(val->x), prev, OP_ACT);
 }
 
-static void backprop(Value* this) {
+[[maybe_unused]] static void backprop(Value* this) {
     // base case - the final element should have a gradient of 1.0
     if (!this->grad) { this->grad = 1.0; }
 
@@ -177,20 +183,20 @@ static void backprop(Value* this) {
         backprop(this->prev[1]);
 
     } else if (this->op == OP_MUL) {
-        this->prev[0]->grad += this->grad * this->prev[1]->grad;
-        this->prev[1]->grad += this->grad * this->prev[0]->grad;
+        this->prev[0]->grad += this->grad * this->prev[1]->x;
+        this->prev[1]->grad += this->grad * this->prev[0]->x;
 
         backprop(this->prev[0]);
         backprop(this->prev[1]);
 
     } else if (this->op == OP_ACT) {
         // TODO: Adjust for other activation functions
-        this->prev[0]->grad += sigmoidfDerivative(this->grad);
+        this->prev[0]->grad += this->grad * sigmoidfDerivative(this->x);
         backprop(this->prev[0]);
     }
 }
 
-static Neuron newNeuron(size_t wCount, Value* inputs[], Arena* a) {
+[[maybe_unused]] static Neuron newNeuron(size_t wCount, Value* inputs[], Arena* a) {
     Neuron n = {0};
     n.weights = arenaAlloc(a, sizeof(Value) * wCount);
 
@@ -204,7 +210,7 @@ static Neuron newNeuron(size_t wCount, Value* inputs[], Arena* a) {
     return n;
 }
 
-static Value activateNeuron(Neuron* n, Value inputs[], size_t inCount) {
+[[maybe_unused]] static Value activateNeuron(Neuron* n, Value inputs[], size_t inCount) {
     assert(inCount >= n->weightCount);
 
     // TODO: Is this the right place to set ops and prevs?
@@ -219,9 +225,10 @@ static Value activateNeuron(Neuron* n, Value inputs[], size_t inCount) {
     return v;
 }
 
-static Layer newLayer(Layer* prevLayer, size_t outputs, Arena* a) {
+[[maybe_unused]] static Layer newLayer(Layer* prevLayer, size_t outputs, Arena* a) {
     Layer l = {0};
     l.neurons = arenaAlloc(a, sizeof(Neuron) * outputs);
+    l.neuronCount = 0;
 
     while (l.neuronCount < outputs) {
         Value* vs;
@@ -242,22 +249,26 @@ static Layer newLayer(Layer* prevLayer, size_t outputs, Arena* a) {
     return l;
 }
 
-static Value* activateLayer(Layer* l, Value* vs, size_t inCount, Arena* a) {
-    if (inCount < l->neuronCount) {
+[[maybe_unused]] static Value* activateLayer(Layer* l, Value* vs, size_t valueCount, Arena* a) {
+    if (valueCount != l->neuronCount) {
         Value* newVs = arenaAlloc(a, sizeof(Value) * l->neuronCount);
-        vs = memmove(newVs, vs, inCount);
+        for (int i = 0; i < fmin(valueCount, l->neuronCount); i++) {
+            newVs[i] = vs[i];
+        }
+        vs = newVs;
     }
 
     for (size_t i = 0; i < l->neuronCount; i++) {
-        vs[i] = activateNeuron(&l->neurons[i], vs, inCount);
+        vs[i] = activateNeuron(&l->neurons[i], vs, valueCount);
     }
 
     return vs;
 }
 
-static MLP newPerceptron(const size_t* arch, const size_t arch_sz, Arena* a) {
+[[maybe_unused]] static MLP newPerceptron(size_t* arch, size_t arch_sz, Arena* a) {
     MLP mlp = {0};
     mlp.layers = arenaAlloc(a, sizeof(Layer) * arch_sz);
+    mlp.arch = arch;
     mlp.layerCount = arch_sz;
 
     Layer* prev = NULL;
@@ -270,21 +281,21 @@ static MLP newPerceptron(const size_t* arch, const size_t arch_sz, Arena* a) {
     return mlp;
 }
 
-static Value* activatePerceptron(MLP* mlp, float* inputs, size_t inCount, Arena* a) {
-    Value* vs = arenaAlloc(a, sizeof(Value) * inCount);
+[[maybe_unused]] static Value* activatePerceptron(MLP* mlp, float* inputs, size_t* inSizes, Arena* a) {
+    Value* vs = arenaAlloc(a, sizeof(Value) * inSizes[0]);
 
-    for (size_t i = 0; i < inCount; i++) {
+    for (size_t i = 0; i < inSizes[0]; i++) {
         vs[i] = newValue(inputs[i], NULLPREV, OP_NONE);
     }
 
     for (size_t i = 0; i < mlp->layerCount; i++) {
-        vs = activateLayer(&mlp->layers[i], vs, inCount, a);
+        vs = activateLayer(&mlp->layers[i], vs, inSizes[i], a);
     }
 
     return vs;
 }
 
-static void zeroGrad(MLP* mlp) {
+[[maybe_unused]] static void zeroGrad(MLP* mlp) {
     for (size_t i = mlp->layerCount - 1; i > 0; i--) {
         for (size_t j = 0; j < mlp->layers[i].neuronCount; j++) {
             for (size_t k = 0; k < mlp->layers[i].neurons[j].weightCount; k++) {
@@ -295,7 +306,7 @@ static void zeroGrad(MLP* mlp) {
     }
 }
 
-static void gradientDescent(MLP* mlp, float learnRate) {
+[[maybe_unused]] static void gradientDescent(MLP* mlp, float learnRate) {
     for (size_t i = mlp->layerCount - 1; i > 0; i--) {
         for (size_t j = 0; j < mlp->layers[i].neuronCount; j++) {
             for (size_t k = 0; k < mlp->layers[i].neurons[j].weightCount; k++) {
@@ -308,18 +319,24 @@ static void gradientDescent(MLP* mlp, float learnRate) {
     }
 }
 
-static bool trainPerceptron(MLP* mlp, Arena* a, float* inputs, size_t inCount, float* expected, float learnRate) {
+[[maybe_unused]] static bool trainPerceptron(MLP* mlp, Arena* a, float* inputs, size_t* inSizes, float* expected, float learnRate) {
     // Feed forward
-    Value* vs = activatePerceptron(mlp, inputs, inCount, a);
+    Value* vs = activatePerceptron(mlp, inputs, inSizes, a);
 
-    // Calculate mean-squared error loss
-    float loss = 0.0;
-    for (size_t i = 0; i < inCount; i++) {
-        loss += powf(vs[i].x - expected[i], 2);
+    // Calculate mean-square error loss
+    Value loss = newValue(0.0f, NULLPREV, OP_NONE);
+    for (size_t i = 0; i < mlp->arch[mlp->layerCount - 1]; i++) {
+        // actual - expected 
+        Value v = newValue(expected[i], NULLPREV, OP_NONE);
+        Value diff = minusValue(&vs[i], &v);
+        // square it
+        Value sq = mulValue(&diff, &diff);
+
+        // add all values up
+        loss = plusValue(&loss, &sq);
     }
 
-    // printf("Loss: %.5f ", loss);
-    if (fabs(loss - expected[0]) <= margin) { return false; }
+    if (fabs(loss.x) <= margin) { return false; }
 
     // backpropagate
     zeroGrad(mlp);
@@ -336,7 +353,7 @@ static bool trainPerceptron(MLP* mlp, Arena* a, float* inputs, size_t inCount, f
     return true;
 }
 
-static void displayPerceptron(MLP* mlp) {
+[[maybe_unused]] static void displayPerceptron(MLP* mlp) {
     for (size_t i = 0; i < mlp->layerCount; i++) {
         printf("Layer: %zu\n", i);
         for (size_t j = 0; j < mlp->layers[i].neuronCount; j++) {
