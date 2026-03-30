@@ -41,7 +41,7 @@ typedef struct _Value {
 } Value;
 
 [[maybe_unused]] static Value newValue(float x, Value* prev, size_t prevLen, Op op);
-[[maybe_unused]] static Value plusValue(Value* lhs, Value* rhs);
+[[maybe_unused]] static Value plusValue(Value* lhs, Value* rhs, Arena* a);
 [[maybe_unused]] static Value minusValue(Value* lhs, Value* rhs);
 [[maybe_unused]] static Value mulValue(Value* lhs, Value* rhs);
 [[maybe_unused]] static Value activateValue(Value* val, float(*activation)(float));
@@ -55,7 +55,7 @@ typedef struct {
 
 // note: inCount is the number of connections into this neuron
 // wCount == inCount
-[[maybe_unused]] static Neuron newNeuron(size_t wCount, Value* inputs[], Arena* a);
+[[maybe_unused]] static Neuron newNeuron(size_t wCount, Value* inputs[], size_t inputLen, Arena* a);
 [[maybe_unused]] static Value activateNeuron(Neuron*, Value inputs[], size_t inCount);
 
 // functionally an array of neurons, but doesn't need to be a dynamic array
@@ -151,8 +151,11 @@ typedef struct {
     };
 }
 
-[[maybe_unused]] static Value plusValue(Value* lhs, Value* rhs) {
-    Value* prev[2] = {lhs, rhs};
+[[maybe_unused]] static Value plusValue(Value* lhs, Value* rhs, Arena* a) {
+    Value* prev = arenaAlloc(a, sizeof(Value) * 2);
+    memcpy(prev, &lhs, sizeof(lhs));
+    memcpy(prev + 1, &lhs, sizeof(lhs));
+
     return newValue(lhs->x + rhs->x, prev, 2, OP_PLUS);
 }
 
@@ -167,7 +170,8 @@ typedef struct {
 }
 
 [[maybe_unused]] static Value activateValue(Value* val, float(*activation)(float)) {
-    return newValue(activation(val->x), val, 1, OP_ACT);
+    Value* prev[1] = {val};
+    return newValue(activation(val->x), prev, 1, OP_ACT);
 }
 
 [[maybe_unused]] static void backprop(Value* this) {
@@ -210,15 +214,18 @@ typedef struct {
 
 [[maybe_unused]] static Value activateNeuron(Neuron* n, Value inputs[], size_t inCount) {
     assert(inCount >= n->weightCount);
-}
     // TODO: Is this the right place to set ops and prevs?
     float val = n->bias.x;
     for (size_t i = 0; i < n->weightCount; i++) {
         val += (n->weights[i].x * inputs[i].x);
     }
 
+    Value* prev[inCount];
+    for (size_t i = 0; i < inCount; i++) {
+        prev[i] = &inputs[i];
+    }
     // TODO: we might also want to genericise this if we use different activation functions
-    Value v = newValue(sigmoidf(val), inputs, inCount, OP_ACT);
+    Value v = newValue(sigmoidf(val), prev, inCount, OP_ACT);
     return v;
 }
 
@@ -229,14 +236,21 @@ typedef struct {
 
     while (l.neuronCount < outputs) {
         Value* vs = NULL;
+        Value** inputPtrs = NULL;
+        size_t inputLen = 0;
         if (prevLayer) {
+            inputLen = prevLayer->neuronCount;
             vs = arenaAlloc(a, sizeof(Value)*prevLayer->neuronCount);
             for (size_t i = 0; i < prevLayer->neuronCount; i++) {
                 vs[i] = prevLayer->neurons[i].weights[i];
             }
+            inputPtrs = arenaAlloc(a, sizeof(Value*)*prevLayer->neuronCount);
+            for (size_t i = 0; i < prevLayer->neuronCount; i++) {
+                inputPtrs[i] = &vs[i];
+            }
         }
 
-        Neuron n = newNeuron(outputs, &vs, a);
+        Neuron n = newNeuron(outputs, inputPtrs, inputLen, a);
         l.neurons[l.neuronCount] = n;
         l.neuronCount++;
     }
@@ -333,7 +347,7 @@ typedef struct {
         *sq = mulValue(diff, diff);
 
         Value* newLoss = arenaAlloc(a, sizeof(Value));
-        *newLoss = plusValue(loss, sq);
+        *newLoss = plusValue(loss, sq, a);
 
         loss = newLoss;
     }
